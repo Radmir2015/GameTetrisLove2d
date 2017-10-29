@@ -28,7 +28,12 @@ function getRandomModel(modelArray, x, y)
 		x = x,
 		y = y,
 		rubbish = 0,
-		direction = "down"
+		direction = "down",
+		color = {
+			r = 255,
+			g = 255,
+			b = 255
+		}
 	}
 	-- love.window.showMessageBox(model, coords)
 	return player
@@ -72,8 +77,12 @@ function playerToMap()
 			end
 		end
 	end
+	
 
 	player = getRandomModel(models, 0, 0)
+
+	player.color = {r = math.random(0, 256), g = math.random(0, 256), b = math.random(0, 256)}
+
 end
 
 
@@ -105,6 +114,15 @@ function collision()
 					if player.direction == "down" then
 						player.y = player.y - 1
 						playerToMap()
+					end
+					if player.direction == "left" then
+						player.x = player.x + 1
+					end
+					if player.direction == "right" then
+						player.x = player.x - 1
+					end
+					if player.directoin == "up" then
+						player.y = player.y + 1
 					end
 				end
 			end
@@ -147,8 +165,6 @@ function love.load()
 	models = {
 		{ -- I
 			name = "I",
-			x = 0,
-			y = 0,
 			length = {
 				x = 4,
 				y = 1
@@ -157,8 +173,6 @@ function love.load()
 		},
 		{ -- T
 			name = "T",
-			x = 0,
-			y = 0,
 			length = {
 				x = 3,
 				y = 2
@@ -167,8 +181,6 @@ function love.load()
 		},
 		{ -- J
 			name = "J",
-			x = 0,
-			y = 0,
 			length = {
 				x = 2,
 				y = 3
@@ -177,8 +189,6 @@ function love.load()
 		},
 		{ -- L
 			name = "L",
-			x = 0,
-			y = 0,
 			length = {
 				x = 2,
 				y = 3
@@ -187,8 +197,6 @@ function love.load()
 		},
 		{ --Q
 			name = "Q",
-			x = 0,
-			y = 0,
 			length = {
 				x = 2,
 				y = 2
@@ -201,6 +209,8 @@ function love.load()
 
 	math.randomseed(os.time())
 
+	-- love.graphics.setColor(255, 255, 255)
+
 	player = getRandomModel(models, 0, 0)
 
 	-- player = {
@@ -210,18 +220,27 @@ function love.load()
 	-- 	height = globalModel.length.y
 	-- }
 
+	time = 0
+
 	love.window.setMode(field.x * scale, field.y * scale)
 end
 
 
 function love.update(dt)
+	time = time + dt
+	if time > 1 then
+		player.y = player.y + 1
+		player.direction = "down"
+		time = 0
+	end
 	collision()
 end
 
 
 function love.draw()
-	love.graphics.setColor(255, 255, 255)
+	love.graphics.setColor(player.color.r, player.color.g, player.color.b)
 	drawModel(player)
+	love.graphics.setColor(255, 255, 255)
 	drawMap(map)
 	-- love.graphics.rectangle("fill", player.x * scale, player.y * scale, (player.width) * scale, (player.height) * scale)
 end
