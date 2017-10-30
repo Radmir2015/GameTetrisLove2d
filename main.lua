@@ -74,6 +74,7 @@ function playerToMap()
 		for j = 1, player.model.length.x do
 			if player.model.shape[(i - 1) * player.model.length.x + j] == 1 then
 				map[player.y + i][player.x + j] = 1
+				colorMap[player.y + i][player.x + j] = {r = player.color.r, g = player.color.g, b = player.color.b}
 			end
 		end
 	end
@@ -143,14 +144,27 @@ function createMap()
 end
 
 
-function drawMap(map)
+function drawMap(map, colorMap)
 	for i = 1, #map do
 		for j = 1, #map[i] do
 			if map[i][j] == 1 then
+				love.graphics.setColor(colorMap[i][j].r, colorMap[i][j].g, colorMap[i][j].b)
 				love.graphics.rectangle("fill", (j - 1) * scale, (i - 1) * scale, scale, scale)
 			end
 		end
 	end
+end
+
+
+function createColorMap()
+	local colorMap = {}
+	for i = 1, field.y do
+		colorMap[i] = {}
+		for j = 1, field.x do
+			colorMap[i][j] = {r = 255, g = 255, b = 255}
+		end
+	end
+	return colorMap
 end
 
 
@@ -206,12 +220,14 @@ function love.load()
 	}
 
 	map = createMap()
+	colorMap = createColorMap()
 
 	math.randomseed(os.time())
 
 	-- love.graphics.setColor(255, 255, 255)
 
 	player = getRandomModel(models, 0, 0)
+	-- player.color = {r = 255, g = 255, b = 255}
 
 	-- player = {
 	-- 	x = globalModel.x,
@@ -240,7 +256,7 @@ end
 function love.draw()
 	love.graphics.setColor(player.color.r, player.color.g, player.color.b)
 	drawModel(player)
-	love.graphics.setColor(255, 255, 255)
-	drawMap(map)
+	-- love.graphics.setColor(255, 255, 255)
+	drawMap(map, colorMap)
 	-- love.graphics.rectangle("fill", player.x * scale, player.y * scale, (player.width) * scale, (player.height) * scale)
 end
