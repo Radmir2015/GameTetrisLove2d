@@ -3,26 +3,23 @@ function love.keyreleased(key)
 		player.x = player.x - 1
 		player.direction = "left"
 	end
-	-- if key == "up" then
-	-- 	player.y = player.y - 1
-	-- 	player.direction = "up"
-	-- end
+	if key == "up" then
+		player.y = player.y - 1
+		player.direction = "up"
+	end
 	if key == "right" then
 		player.x = player.x + 1
 		player.direction = "right"
 	end
-	-- if key == "down" then
-	-- 	player.y = player.y + 1
-	-- 	player.direction = "down"
-	-- end
+	if key == "down" then
+		player.y = player.y + 1
+		player.direction = "down"
+	end
 	if key == "return" then
 		player = getRandomModel(models, 0, 0)
 	end
-	if key == "down" then
-		rotatePlayer(player, "-")
-	end
-	if key == "up" then
-		rotatePlayer(player, "+")
+	if key == "f" then
+		rotatePlayer(player)
 	end
 end
 
@@ -45,18 +42,12 @@ function getRandomModel(modelArray, x, y)
 		rubbish = 0,
 		direction = "down",
 		rotation = 0,
-		xStart = 1,
-		xEnd = #model.matrix[1],
-		yEnd = #model.matrix,
-		yStart = 1,
-		speed = 1,
 		color = {
 			r = 255,
 			g = 255,
 			b = 255
 		}
 	}
-	player = countBorders(player)
 	-- love.window.showMessageBox(model, coords)
 	return player
 end
@@ -80,9 +71,9 @@ function drawModel(player)
 	-- 	end
 	-- end
 
-	for i = 1, #player.model.matrix do
-		for j = 1, #player.model.matrix[i] do
-			if player.model.matrix[i][j] == 1 then
+	for i = 1, player.model.length.y do
+		for j = 1, player.model.length.x do
+			if player.model.shape[(i - 1) * player.model.length.x + j] == 1 then
 				love.graphics.rectangle("fill", (player.x + (j - 1)) * scale, (player.y + (i - 1)) * scale, scale, scale)
 			end
 		end
@@ -92,10 +83,9 @@ end
 function playerToMap()
 	player.rubbish = 1
 	
-	for i = 1, #player.model.matrix do
-		for j = 1, #player.model.matrix[i] do
-			if player.model.matrix[i][j] == 1 then
-				-- showTable({{player.y, player.x, i, j}})
+	for i = 1, player.model.length.y do
+		for j = 1, player.model.length.x do
+			if player.model.shape[(i - 1) * player.model.length.x + j] == 1 then
 				if player.y + i >= 1 and player.x + j >= 1 then
 					map[player.y + i][player.x + j] = 1
 					colorMap[player.y + i][player.x + j] = {r = player.color.r, g = player.color.g, b = player.color.b}
@@ -115,60 +105,46 @@ end
 
 
 function collision()
-	if player.x + (player.xStart - 1) < 0 then
-		player.x = - (player.xStart - 1)
+	if player.x < 0 then
+		player.x = 0
 	end
 
-	if player.y + (player.yStart - 1) < 0 then
-		player.y = - (player.yStart - 1)
+	if player.y < 0 then
+		player.y = 0
 	end
 
-	if player.x + (player.xStart - 1) > field.x - (player.xEnd - player.xStart + 1) then
-		player.x = field.x - player.xEnd
+	if player.x > field.x - player.model.length.x then
+		player.x = field.x - player.model.length.x
 	end
 
-	if player.y + (player.yStart - 1) > field.y - (player.yEnd - player.yStart + 1) then
-		player.y = field.y - player.yEnd
+	if player.y > field.y - player.model.length.y then
+		player.y = field.y - player.model.length.y
 
 		playerToMap()
 	end
-	local br = false
-	for i = 1, #player.model.matrix do
-		for j = 1, #player.model.matrix[i] do
-			if player.model.matrix[i][j] == 1 then
+
+	for i = 1, player.model.length.y do
+		for j = 1, player.model.length.x do
+			if player.model.shape[(i - 1) * player.model.length.x + j] == 1 then
 				local x = player.x + j
 				local y = player.y + i
-				if (x < 1 or y < 1) then
-					showTable({{x, y}})
-				end
 				if map[y][x] == 1 then
 					if player.direction == "down" then
-						while (map[player.y + i][player.x + j] ~= 0) do
-							player.y = player.y - 1
-						end
+						player.y = player.y - 1
 						playerToMap()
-						br = true
-						break
 					end
 					if player.direction == "left" then
-						while (map[player.y + i][player.x + j] ~= 0) do
-							player.x = player.x + 1
-						end
+						player.x = player.x + 1
 					end
 					if player.direction == "right" then
-						while (map[player.y + i][player.x + j] ~= 0) do
-							player.x = player.x - 1
-						end
+						player.x = player.x - 1
 					end
 					if player.direction == "up" then
-						while (map[player.y + i][player.x + j] ~= 0) do
-							player.y = player.y + 1
-						end
+						player.y = player.y + 1
 					end
 				end
 			end
 		end
-		if (br) then break end
 	end
 end
 
@@ -253,54 +229,121 @@ function showTable(tbl)
 end
 
 
-function countBorders(player)
-	player.xStart = 1
-	while (table.sum(getColumn(player.model.matrix, player.xStart)) == 0) do
-		player.xStart = player.xStart + 1
-	end
-	player.xEnd = #player.model.matrix
-	while (table.sum(getColumn(player.model.matrix, player.xEnd)) == 0) do
-		player.xEnd = player.xEnd - 1
-	end
-	player.yEnd = #player.model.matrix
-	while (table.sum(player.model.matrix[player.yEnd]) == 0) do
-		player.yEnd = player.yEnd - 1
-	end
-	player.yStart = 1
-	while (table.sum(player.model.matrix[player.yStart]) == 0) do
-		player.yStart = player.yStart + 1
-	end
-	return player
-end
-
-
-function rotatePlayer(player, rotation)
+function rotatePlayer(player)
 	local grid = {}
 	local newGrid = {}
 	max = math.max(player.model.length.y, player.model.length.x)
+	player.rotation = player.rotation + 1
+	player.rotation = player.rotation % 4
+	-- love.window.showMessageBox(tostring(player.model.length.y), tostring(player.model.length.x))
 	for i = 1, max do
 		grid[i] = {}
 		newGrid[i] = {}
 	end
-	local array = {}
-	for i = 1, #player.model.matrix do
-		for j = 1, #player.model.matrix[i] do
-			if rotation == "+" then
-				newGrid[i][j] = player.model.matrix[max - j + 1][i]
-			elseif rotation == "-" then
-				newGrid[i][j] = player.model.matrix[j][max - i + 1]
+	for i = 1, max do
+		for j = 1, max do
+			grid[i][j] = 0
+			newGrid[i][j] = 0
+		end
+	end
+	-- love.window.showMessageBox(tostring(player.model.length.y), tostring(player.model.length.x))
+	if player.rotation == 2 then
+		for i = 1, max do
+			for j = 1, max do
+				if (i <= player.model.length.y and i > 0) and (j <= player.model.length.x and j > 0) then
+					-- love.window.showMessageBox(tostring(i), tostring(j))
+					grid[i][j + 1] = player.model.shape[(i - 1) * player.model.length.x + j]
+				else
+					grid[i][j + 1] = 0
+				end
+			end
+		end
+		-- player.x = player.x - 1
+	elseif player.rotation == 3 then
+		grid[max + 1] = {}
+		newGrid[max + 1] = {}
+		for i = 1, max do
+			for j = 1, max do
+				if (i <= player.model.length.y and i > 0) and (j <= player.model.length.x and j > 0) then
+					grid[i + 1][j] = player.model.shape[(i - 1) * player.model.length.x + j]
+				else
+					grid[i + 1][j] = 0
+				end
+			end
+		end
+		-- player.y = player.y - 1
+	else
+		for i = 1, max do
+			for j = 1, max do
+				if (i <= player.model.length.y and i > 0) and (j <= player.model.length.x and j > 0) then
+					grid[i][j] = player.model.shape[(i - 1) * player.model.length.x + j]
+				else
+					grid[i][j] = 0
+				end
 			end
 		end
 	end
-	-- showTable(newGrid)
-	player.model.matrix = newGrid
-	countBorders(player)
+	showTable(grid)
+	local array = {}
+	for i = 1, #newGrid do
+		for j = 1, #newGrid[i] do
+			newGrid[i][j] = grid[max - j + 1][i]
+			-- array[(i - 1) * max + j] = newGrid[i][j]
+		end
+	end
+	showTable(newGrid)
+	-- file = io.open("test.txt", "w+")
+	-- for i = 1, max do
+	-- 	for j = 1, max do
+	-- 		io.write(tostring(newGrid[i][j] .. " "))
+	-- 	end
+	-- 	io.write("", "\n")
+	-- end
+	-- io.close(file)
+	-- love.window.showMessageBox(tostring(table.sum(getColumn(newGrid,1))), tostring(table.sum(getColumn(newGrid, #newGrid))))
+	player.model.length.x = max
+	player.model.length.y = max
+	-- love.window.showMessageBox(tostring(table.sum(getColumn(newGrid, 1))), tostring(table.sum(getColumn(newGrid, -1))))
+	-- love.window.showMessageBox(tostring(table.sum(newGrid[1])), tostring(table.sum(newGrid[#newGrid])))
+	while (table.sum(getColumn(newGrid, 1)) == 0) do
+		for i = 1, #newGrid do
+			newGrid[i] = table.slice(newGrid[i], 2)
+		end
+		-- love.window.showMessageBox(tostring(#newGrid[1]), table.sum(getColumn(newGrid, 1)))
+		player.x = player.x + 1
+		player.model.length.x = player.model.length.x - 1
+	end
+	-- love.window.showMessageBox(tostring(table.sum(getColumn(newGrid, #newGrid[1]))), tostring(table.sum(getColumn(newGrid, 2))))
+	while (table.sum(getColumn(newGrid, #newGrid[1])) == 0) do
+		-- love.window.showMessageBox(tostring(table.sum(getColumn(newGrid, -1))), table.sum(getColumn(newGrid, -1)))
+		for i = 1, #newGrid do
+			newGrid[i] = table.slice(newGrid[i], 1, #newGrid[i] - 1)
+		end
+		-- love.window.showMessageBox(tostring(#newGrid[1]), table.sum(getColumn(newGrid, 1)))
+		player.model.length.x = player.model.length.x - 1
+	end
+	while (table.sum(newGrid[1]) == 0) do
+		for i = 1, #newGrid - 1 do
+			newGrid[i] = newGrid[i + 1]
+		end
+		newGrid[#newGrid] = nil
+		player.y = player.y + 1
+		player.model.length.y = player.model.length.y - 1
+	end
+	while (table.sum(newGrid[#newGrid]) == 0) do
+		newGrid[#newGrid] = nil
+		player.model.length.y = player.model.length.y - 1
+	end
+	for i = 1, player.model.length.y do
+		for j = 1, player.model.length.x do
+			array[(i - 1) * player.model.length.x + j] = newGrid[i][j]
+		end
+	end
+	player.model.shape = array
 end
 
 
 function love.load()
-	love.keyboard.setKeyRepeat(true)
-
 	scale = 32
 
 	field = {
@@ -372,7 +415,6 @@ function love.load()
 			matrix = {
 				{1, 1},
 				{1, 1}
-			}
 		}
 	}
 
@@ -402,17 +444,12 @@ end
 function love.update(dt)
 	collision()
 	time = time + dt
-	if love.keyboard.isDown("space") then
-		player.speed = 4
-	else
-		player.speed = 1
-	end
-	if time > 1 / player.speed then
-		player.y = player.y + 1
-		player.direction = "down"
-		time = 0
-	end
-	collision()
+	-- if time > 1 then
+	-- 	player.y = player.y + 1
+	-- 	player.direction = "down"
+	-- 	time = 0
+	-- end
+	-- collision()
 end
 
 
