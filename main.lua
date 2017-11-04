@@ -1,5 +1,5 @@
 function love.keyreleased(key)
-	if key == "left" then
+	if key == "left" or key == "a" then
 		player.x = player.x - 1
 		player.direction = "left"
 	end
@@ -7,7 +7,7 @@ function love.keyreleased(key)
 	-- 	player.y = player.y - 1
 	-- 	player.direction = "up"
 	-- end
-	if key == "right" then
+	if key == "right" or key == "d" then
 		player.x = player.x + 1
 		player.direction = "right"
 	end
@@ -18,10 +18,10 @@ function love.keyreleased(key)
 	if key == "return" then
 		player = getRandomModel(models, 0, 0)
 	end
-	if key == "down" then
+	if key == "down" or key == "s" then
 		rotatePlayer(player, "-")
 	end
-	if key == "up" then
+	if key == "up" or key == "w" then
 		rotatePlayer(player, "+")
 	end
 end
@@ -298,8 +298,44 @@ function rotatePlayer(player, rotation)
 end
 
 
+function arrayToString(array)
+	local str = ""
+	for i = 1, #array do
+		str = str .. array[i] .. " "
+	end
+	return str
+end
+
+
+function checkIfRow(map)
+	for i = 1, #map do
+		-- showTable({{table.sum(map[i])}})
+		-- love.graphics.setFont(love.graphics.newFont(40))
+		-- love.graphics.setColor(0, 0, 0)
+		-- love.graphics.setBackgroundColor(0, 0, 0)
+		-- love.graphics.print(table.sum(map[i]), 10, 10, 0, 10 * scale, 10 * scale)
+		if (table.sum(map[i]) == #map[i]) then
+			for j = i, 1, -1 do
+				if j == 1 then
+					for k = 1, #map[j] do
+						map[j][k] = 0
+						colorMap[j][k] = {r = 255, g = 255, b = 255}
+					end
+				else
+					for k = 1, #map[j] do
+						map[j][k] = map[j - 1][k]
+						colorMap[j][k] = colorMap[j - 1][k]
+					end
+				end
+			end
+		end
+	end
+end
+
+
 function love.load()
 	love.keyboard.setKeyRepeat(true)
+	love.graphics.setFont(love.graphics.newFont(40))
 
 	scale = 32
 
@@ -400,6 +436,7 @@ end
 
 
 function love.update(dt)
+	checkIfRow(map)
 	collision()
 	time = time + dt
 	if love.keyboard.isDown("space") then
