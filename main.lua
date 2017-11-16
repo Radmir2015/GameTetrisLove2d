@@ -57,6 +57,7 @@ function getRandomModel(modelArray, x, y)
 		}
 	}
 	player = countBorders(player)
+	player.x = x - (player.xStart - 1)
 	-- love.window.showMessageBox(model, coords)
 	return player
 end
@@ -146,9 +147,9 @@ function collision()
 						while (map[player.y + i][player.x + j] ~= 0) do
 							player.y = player.y - 1
 						end
-						playerToMap()
+						-- playerToMap()
 						br = true
-						break
+						-- break
 					end
 					if player.direction == "left" then
 						while (map[player.y + i][player.x + j] ~= 0) do
@@ -168,8 +169,10 @@ function collision()
 				end
 			end
 		end
-		if (br) then break end
+		-- if (br) then break end
 	end
+	if br then
+		playerToMap() end
 end
 
 
@@ -353,10 +356,10 @@ function love.load()
 				},
 			shape = {1, 1, 1, 1},
 			matrix = {
-				{1, 0, 0, 0},
-				{1, 0, 0, 0},
-				{1, 0, 0, 0},
-				{1, 0, 0, 0}
+				{0, 1, 0, 0},
+				{0, 1, 0, 0},
+				{0, 1, 0, 0},
+				{0, 1, 0, 0}
 			}
 		},
 		{ -- T
@@ -367,8 +370,8 @@ function love.load()
 			},
 			shape = {1, 1, 1, 0, 1, 0},
 			matrix = {
-				{1, 1, 1},
 				{0, 1, 0},
+				{1, 1, 1},
 				{0, 0, 0}
 			}
 		},
@@ -393,9 +396,9 @@ function love.load()
 			},
 			shape = {1, 0, 1, 0, 1, 1},
 			matrix = {
-				{1, 0, 0},
-				{1, 0, 0},
-				{1, 1, 0}
+				{0, 1, 0},
+				{0, 1, 0},
+				{0, 1, 1}
 			}
 		},
 		{ --Q
