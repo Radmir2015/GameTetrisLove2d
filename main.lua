@@ -47,6 +47,9 @@ function gameOver()
 	-- gameStopped = false
 	player = getRandomModel(models, 0, 0)
 	time = 0
+
+	colorMap = createColorMap()
+	map = createMap()
 end
 
 
@@ -101,7 +104,7 @@ function drawModel(player)
 	for i = 1, #player.model.matrix do
 		for j = 1, #player.model.matrix[i] do
 			if player.model.matrix[i][j] == 1 then
-				love.graphics.rectangle("fill", (player.x + (j - 1)) * scale, (player.y + (i - 1)) * scale, scale, scale)
+				love.graphics.rectangle("fill", (player.x + (j - 1) + field.xStart - 1) * scale, (player.y + (i - 1) + field.yStart - 1) * scale, scale, scale)
 			end
 		end
 	end
@@ -109,6 +112,8 @@ end
 
 function playerToMap()
 	player.rubbish = 1
+
+	-- love.window.setTitle(tostring(#player.model.matrix[1]))
 	
 	for i = 1, #player.model.matrix do
 		for j = 1, #player.model.matrix[i] do
@@ -234,7 +239,7 @@ function drawMap(map, colorMap)
 		for j = 1, #map[i] do
 			if map[i][j] == 1 then
 				love.graphics.setColor(colorMap[i][j].r, colorMap[i][j].g, colorMap[i][j].b)
-				love.graphics.rectangle("fill", (j - 1) * scale, (i - 1) * scale, scale, scale)
+				love.graphics.rectangle("fill", ((j - 1) + field.xStart - 1) * scale, ((i - 1) + field.yStart - 1) * scale, scale, scale)
 			end
 		end
 	end
@@ -406,8 +411,15 @@ function love.load()
 
 	field = {
 		x = 10,
-		y = 15
+		y = 15,
+		xStart = 2,
+		yStart = 5,
+		xToEnd = 2,
+		yToEnd = 2
 	}
+
+	field.xTotal = field.x + field.xStart + field.xToEnd - 2
+	field.yTotal = field.y + field.yStart + field.yToEnd - 2
 
 	models = {
 		{ -- I
@@ -450,6 +462,19 @@ function love.load()
 				{0, 1, 0},
 			}
 		},
+		{ -- J
+			name = "J",
+			length = {
+				x = 2,
+				y = 3
+			},
+			shape = {1, 0, 1, 1, 0, 1},
+			matrix = {
+				{0, 0, 1},
+				{0, 1, 1},
+				{0, 1, 0},
+			}
+		},
 		{ -- L
 			name = "L",
 			length = {
@@ -461,6 +486,19 @@ function love.load()
 				{0, 1, 0},
 				{0, 1, 0},
 				{0, 1, 1}
+			}
+		},
+		{ -- L
+			name = "L",
+			length = {
+				x = 2,
+				y = 3
+			},
+			shape = {1, 0, 1, 0, 1, 1},
+			matrix = {
+				{0, 1, 0},
+				{0, 1, 0},
+				{1, 1, 0}
 			}
 		},
 		{ --Q
@@ -498,7 +536,7 @@ function love.load()
 
 	time = 0
 
-	love.window.setMode(field.x * scale, field.y * scale)
+	love.window.setMode(field.xTotal * scale, field.yTotal * scale)
 end
 
 
@@ -509,9 +547,9 @@ function love.update(dt)
 	end
 	time = time + dt
 	if love.keyboard.isDown("space") then
-		player.speed = 4
+		player.speed = 6
 	else
-		player.speed = 1
+		player.speed = 2
 	end
 	if (not gameStopped) and (time > 1 / player.speed) then
 		player.y = player.y + 1
@@ -527,5 +565,7 @@ function love.draw()
 	drawModel(player)
 	-- love.graphics.setColor(255, 255, 255)
 	drawMap(map, colorMap)
+	love.graphics.setColor(255, 255, 255)
+	love.graphics.rectangle("line", (field.xStart - 1) * scale - 2, (field.yStart - 1) * scale - 2, (field.x) * scale + 2, (field.y) * scale + 2)
 	-- love.graphics.rectangle("fill", player.x * scale, player.y * scale, (player.width) * scale, (player.height) * scale)
 end
