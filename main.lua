@@ -24,6 +24,9 @@ function love.keyreleased(key)
 	if key == "up" or key == "w" then
 		rotatePlayer(player, "+")
 	end
+	if key == "p" then
+		gameStopped = not gameStopped
+	end
 end
 
 
@@ -33,6 +36,17 @@ local function table_copy(t)
 	 r[k] = v
   end
   return r
+end
+
+
+function gameOver()
+	love.window.showMessageBox("Game Over!", "Do your wanna start next one?")
+	gameStopped = true
+	colorMap = createColorMap()
+	map = createMap()
+	-- gameStopped = false
+	player = getRandomModel(models, 0, 0)
+	time = 0
 end
 
 
@@ -57,7 +71,10 @@ function getRandomModel(modelArray, x, y)
 		}
 	}
 	player = countBorders(player)
-	player.x = x - (player.xStart - 1)
+	-- player.x = x - (player.xStart - 1)
+	player.x = field.x - player.xEnd
+	player.y = 1 - player.yStart
+	player.color = {r = math.random(0, 256), g = math.random(0, 256), b = math.random(0, 256)}
 	-- love.window.showMessageBox(model, coords)
 	return player
 end
@@ -97,11 +114,13 @@ function playerToMap()
 		for j = 1, #player.model.matrix[i] do
 			if player.model.matrix[i][j] == 1 then
 				-- showTable({{player.y, player.x, i, j}})
-				if player.y + i >= 1 and player.x + j >= 1 then
+				if (player.y + i >= 1 and player.x + j >= 1) and (player.y + i <= field.y and player.x + j <= field.x) then
 					map[player.y + i][player.x + j] = 1
 					colorMap[player.y + i][player.x + j] = {r = player.color.r, g = player.color.g, b = player.color.b}
 				else
-					love.window.showMessageBox("Game Over", tostring(player.y + i) .. " " .. tostring(player.x + j))
+					gameOver()
+					-- gameStopped = true
+					-- love.window.showMessageBox("Game Over", tostring(player.y + i) .. " " .. tostring(player.x + j))
 				end
 			end
 		end
@@ -134,21 +153,40 @@ function collision()
 		playerToMap()
 	end
 	local br = false
+	local gameOverBreak = false
 	for i = 1, #player.model.matrix do
 		for j = 1, #player.model.matrix[i] do
 			if player.model.matrix[i][j] == 1 then
 				local x = player.x + j
 				local y = player.y + i
-				if (x < 1 or y < 1) then
-					showTable({{x, y}})
+				-- if (x < 1 or y < 1) then
+				-- 	showTable({{x, y}})
+				-- end
+				if not (player.y + i >= 1 and player.x + j >= 1) or not (player.y + i <= #map and player.x + j <= #map[1]) then
+					-- gameOver()
+					gameOverBreak = true
+					break
 				end
 				if map[y][x] == 1 then
 					if player.direction == "down" then
-						while (map[player.y + i][player.x + j] ~= 0) do
-							player.y = player.y - 1
+						-- if not (player.y + i >= 1 and player.x + j >= 1) or not (player.y + i <= #map and player.x + j <= #map[1]) then
+							-- love.window.setTitle(tostring(player.y + i) .. " " .. tostring(player.x + j))
+						-- end
+						if (player.y + i >= 1 and player.x + j >= 1) and (player.y + i <= #map and player.x + j <= #map[player.y + i]) then
+							while (map[player.y + i][player.x + j] ~= 0) do 
+								player.y = player.y - 1
+								-- love.window.setTitle(tostring(getJoinTableOfTable(map)))
+								-- showTable(map)
+								if (player.y + i < 1 or player.x + j < 1) then
+									-- gameOver()
+									gameOverBreak = true
+									break
+								end
+							end
 						end
 						-- playerToMap()
 						br = true
+						if (gameOverBreak) then br = false end
 						-- break
 					end
 					if player.direction == "left" then
@@ -169,9 +207,12 @@ function collision()
 				end
 			end
 		end
-		-- if (br) then break end
+		if (gameOverBreak) then
+			gameOver()
+			break
+		end
 	end
-	if br then
+	if br and not gameOverBreak then
 		playerToMap() end
 end
 
@@ -253,6 +294,27 @@ function showTable(tbl)
 		str = str .. "\n"
 	end
 	love.window.showMessageBox("NewGrid", str)
+end
+
+
+function getJoinTable(tbl)
+	local str = ""
+	for i = 1, #tbl do
+		str = str .. tostring(tbl[i]) .. " "
+	end
+	return str
+end
+
+
+function getJoinTableOfTable(tbl)
+	local str = ""
+	for i = 1, #tbl do
+		for j = 1, #tbl[i] do
+			str = str .. tostring(tbl[i][j]) .. " "
+		end
+		str = str .. "\n"
+	end
+	return str
 end
 
 
@@ -420,6 +482,8 @@ function love.load()
 
 	math.randomseed(os.time())
 
+	gameStopped = false
+
 	-- love.graphics.setColor(255, 255, 255)
 
 	player = getRandomModel(models, 0, 0)
@@ -440,19 +504,21 @@ end
 
 function love.update(dt)
 	checkIfRow(map)
-	collision()
+	if not gameStopped then
+		collision()
+	end
 	time = time + dt
 	if love.keyboard.isDown("space") then
 		player.speed = 4
 	else
 		player.speed = 1
 	end
-	if time > 1 / player.speed then
+	if (not gameStopped) and (time > 1 / player.speed) then
 		player.y = player.y + 1
 		player.direction = "down"
 		time = 0
+		collision()
 	end
-	collision()
 end
 
 
