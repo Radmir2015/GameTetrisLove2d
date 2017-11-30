@@ -1,5 +1,5 @@
 function love.keyreleased(key)
-	if key == "left" or key == "a" then
+	if (key == "left" or key == "a") and not gameStopped then
 		player.x = player.x - 1
 		player.direction = "left"
 	end
@@ -7,7 +7,7 @@ function love.keyreleased(key)
 	-- 	player.y = player.y - 1
 	-- 	player.direction = "up"
 	-- end
-	if key == "right" or key == "d" then
+	if (key == "right" or key == "d") and not gameStopped then
 		player.x = player.x + 1
 		player.direction = "right"
 	end
@@ -15,16 +15,24 @@ function love.keyreleased(key)
 	-- 	player.y = player.y + 1
 	-- 	player.direction = "down"
 	-- end
+	if key == "tab" then
+		-- player = getRandomModel(models, 0, 0)
+		generateCycle()
+	end
+	if (key == "down" or key == "s") and not gameStopped then
+		player = rotatePlayer(player, "-")
+	end
+	if (key == "up" or key == "w") and not gameStopped then
+		player = rotatePlayer(player, "+")
+	end
 	if key == "return" then
-		player = getRandomModel(models, 0, 0)
-	end
-	if key == "down" or key == "s" then
-		rotatePlayer(player, "-")
-	end
-	if key == "up" or key == "w" then
-		rotatePlayer(player, "+")
-	end
-	if key == "p" then
+		if gameStopped and gameOvered then
+			colorMap = createColorMap()
+			map = createMap()
+			-- generateCycle()
+			gameOvered = false
+			score = 0
+		end
 		gameStopped = not gameStopped
 	end
 end
@@ -40,16 +48,17 @@ end
 
 
 function gameOver()
-	love.window.showMessageBox("Game Over!", "Do your wanna start next one?")
+	-- love.window.showMessageBox("Game Over!", "Do your wanna start next one?")
+	-- love.graphics.printf("Game Over! Do your wanna start a new game? Click Enter to start a new game", field.xStart * scale, field.yStart * scale, field.x * scale, "center")
 	gameStopped = true
-	colorMap = createColorMap()
-	map = createMap()
+	gameOvered = true
 	-- gameStopped = false
-	player = getRandomModel(models, 0, 0)
+	-- player = getRandomModel(models, 0, 0)
+	-- generateCycle()
 	time = 0
 
-	colorMap = createColorMap()
-	map = createMap()
+	-- colorMap = createColorMap()
+	-- map = createMap()
 end
 
 
@@ -73,12 +82,22 @@ function getRandomModel(modelArray, x, y)
 			b = 255
 		}
 	}
-	player = countBorders(player)
 	-- player.x = x - (player.xStart - 1)
-	player.x = field.x - player.xEnd
-	player.y = 1 - player.yStart
 	player.color = {r = math.random(0, 256), g = math.random(0, 256), b = math.random(0, 256)}
+	if math.random(0, 2) == 1 then
+		for i = 1, math.random(0, 3) do
+			player = rotatePlayer(player, "+")
+		end
+	else
+		for i = 1, math.random(0, 3) do
+			player = rotatePlayer(player, "-")
+		end
+	end
 	-- love.window.showMessageBox(model, coords)
+	player = countBorders(player)
+	-- player.x = field.x - player.xEnd
+	player.x = math.floor(field.x / 2) - math.floor((player.xEnd - player.xStart + 1) / 2)
+	player.y = 1 - player.yStart
 	return player
 end
 
@@ -100,6 +119,10 @@ function drawModel(player)
 	-- 		end
 	-- 	end
 	-- end
+	player = countBorders(player)
+	if player.y + (player.yStart - 1) < 0 then
+		player.y = - (player.yStart - 1)
+	end -- need to edit, cuz shapes mustn't overrotate 
 
 	for i = 1, #player.model.matrix do
 		for j = 1, #player.model.matrix[i] do
@@ -132,9 +155,12 @@ function playerToMap()
 	end
 	
 
-	player = getRandomModel(models, 0, 0)
+	-- player = getRandomModel(models, 0, 0)
+	-- nextShape.field = player.model.matrix
+	generateCycle()
 
-	player.color = {r = math.random(0, 256), g = math.random(0, 256), b = math.random(0, 256)}
+	-- player.color = {r = math.random(0, 256), g = math.random(0, 256), b = math.random(0, 256)}
+	-- nextShape.color = player.color
 
 end
 
@@ -340,6 +366,7 @@ function countBorders(player)
 	while (table.sum(player.model.matrix[player.yStart]) == 0) do
 		player.yStart = player.yStart + 1
 	end
+	-- love.window.setTitle(tostring(getJoinTable({player.xStart, player.yStart, player.xEnd, player.yEnd})))
 	return player
 end
 
@@ -364,7 +391,8 @@ function rotatePlayer(player, rotation)
 	end
 	-- showTable(newGrid)
 	player.model.matrix = newGrid
-	countBorders(player)
+	player = countBorders(player)
+	return player
 end
 
 
@@ -397,29 +425,92 @@ function checkIfRow(map)
 						colorMap[j][k] = colorMap[j - 1][k]
 					end
 				end
+				score = score + 20
 			end
 		end
 	end
 end
 
 
+function drawNextShape(shape)
+	love.graphics.setColor(shape.color.r, shape.color.g, shape.color.b)
+	for i = 1, #shape.field do
+		for j = 1, #shape.field[i] do
+			if shape.field[i][j] == 1 then
+				love.graphics.rectangle("fill", (0 + (j - 1) + nextShapeTable.xStart - 1) * scale, (0 + (i - 1) + nextShapeTable.yStart - 1) * scale, scale, scale)
+			end
+		end
+	end
+end
+
+
+function generateCycle()
+	player = nextShape.player
+
+	nextShape.player = getRandomModel(models, 0, 0)
+	nextShape.field = nextShape.player.model.matrix
+	nextShape.color = nextShape.player.color
+end
+
+
+function addZeros(score)
+	s = tostring(score)
+	while (string.len(s) < 4) do
+		s = "0" .. s
+	end
+	-- return "0" * (4 - string.len(s)) .. s
+	-- return "---" + s
+	-- end
+	return s
+end
+
+
 function love.load()
 	love.keyboard.setKeyRepeat(true)
-	love.graphics.setFont(love.graphics.newFont(40))
+	-- love.graphics.setFont(love.graphics.newFont(40))
+	love.graphics.setFont(love.graphics.newFont("consola.ttf", 20))
+
+	love.window.setTitle("The Tetris Game")
 
 	scale = 32
+	score = 0
 
 	field = {
 		x = 10,
 		y = 15,
 		xStart = 2,
-		yStart = 5,
-		xToEnd = 2,
+		yStart = 2,
+		xToEnd = 7,
 		yToEnd = 2
 	}
 
 	field.xTotal = field.x + field.xStart + field.xToEnd - 2
 	field.yTotal = field.y + field.yStart + field.yToEnd - 2
+
+	nextShapeTable = {
+		x = 4,
+		y = 4,
+		xStart = 13,
+		yStart = 2,
+	}
+
+	nextShape = {field = {}, color = {}, player = {}}
+
+	labelScore = {
+		text = "Score: ",
+		xStart = 12,
+		xEnd = 16,
+		yStart = 6,
+		yEnd = 7
+	}
+
+	nextShape.color = {r = 255, g = 255, b = 255}
+	for i = 1, nextShapeTable.x do
+		nextShape.field[i] = {}
+		for j = 1, nextShapeTable.y do
+			nextShape.field[i][j] = 0
+		end
+	end
 
 	models = {
 		{ -- I
@@ -428,7 +519,7 @@ function love.load()
 				x = 4,
 				y = 1
 				},
-			shape = {1, 1, 1, 1},
+			-- shape = {1, 1, 1, 1},
 			matrix = {
 				{0, 1, 0, 0},
 				{0, 1, 0, 0},
@@ -442,7 +533,7 @@ function love.load()
 				x = 3,
 				y = 2
 			},
-			shape = {1, 1, 1, 0, 1, 0},
+			-- shape = {1, 1, 1, 0, 1, 0},
 			matrix = {
 				{0, 1, 0},
 				{1, 1, 1},
@@ -455,7 +546,7 @@ function love.load()
 				x = 2,
 				y = 3
 			},
-			shape = {1, 0, 1, 1, 0, 1},
+			-- shape = {1, 0, 1, 1, 0, 1},
 			matrix = {
 				{1, 0, 0},
 				{1, 1, 0},
@@ -468,7 +559,7 @@ function love.load()
 				x = 2,
 				y = 3
 			},
-			shape = {1, 0, 1, 1, 0, 1},
+			-- shape = {1, 0, 1, 1, 0, 1},
 			matrix = {
 				{0, 0, 1},
 				{0, 1, 1},
@@ -481,7 +572,7 @@ function love.load()
 				x = 2,
 				y = 3
 			},
-			shape = {1, 0, 1, 0, 1, 1},
+			-- shape = {1, 0, 1, 0, 1, 1},
 			matrix = {
 				{0, 1, 0},
 				{0, 1, 0},
@@ -494,7 +585,7 @@ function love.load()
 				x = 2,
 				y = 3
 			},
-			shape = {1, 0, 1, 0, 1, 1},
+			-- shape = {1, 0, 1, 0, 1, 1},
 			matrix = {
 				{0, 1, 0},
 				{0, 1, 0},
@@ -507,7 +598,7 @@ function love.load()
 				x = 2,
 				y = 2
 			},
-			shape = {1, 1, 1, 1},
+			-- shape = {1, 1, 1, 1},
 			matrix = {
 				{1, 1},
 				{1, 1}
@@ -520,11 +611,14 @@ function love.load()
 
 	math.randomseed(os.time())
 
-	gameStopped = false
+	gameStopped = true
+	gameOvered = true
 
 	-- love.graphics.setColor(255, 255, 255)
 
-	player = getRandomModel(models, 0, 0)
+	-- player = getRandomModel(models, 0, 0)
+	generateCycle()
+	generateCycle()
 	-- player.color = {r = 255, g = 255, b = 255}
 
 	-- player = {
@@ -541,21 +635,23 @@ end
 
 
 function love.update(dt)
-	checkIfRow(map)
-	if not gameStopped then
-		collision()
-	end
-	time = time + dt
-	if love.keyboard.isDown("space") then
-		player.speed = 6
-	else
-		player.speed = 2
-	end
-	if (not gameStopped) and (time > 1 / player.speed) then
-		player.y = player.y + 1
-		player.direction = "down"
-		time = 0
-		collision()
+	if not gameOvered then
+		checkIfRow(map)
+		if not gameStopped then
+			collision()
+		end
+		time = time + dt
+		if love.keyboard.isDown("space") then
+			player.speed = 6
+		else
+			player.speed = 2
+		end
+		if (not gameStopped) and (time > 1 / player.speed) then
+			player.y = player.y + 1
+			player.direction = "down"
+			time = 0
+			collision()
+		end
 	end
 end
 
@@ -567,5 +663,12 @@ function love.draw()
 	drawMap(map, colorMap)
 	love.graphics.setColor(255, 255, 255)
 	love.graphics.rectangle("line", (field.xStart - 1) * scale - 2, (field.yStart - 1) * scale - 2, (field.x) * scale + 2, (field.y) * scale + 2)
+	love.graphics.rectangle("line", (nextShapeTable.xStart - 1) * scale - 2, (nextShapeTable.yStart - 1) * scale - 2, nextShapeTable.x * scale + 2, nextShapeTable.y * scale + 2)
+	drawNextShape(nextShape)
+	love.graphics.printf(labelScore.text .. addZeros(score), labelScore.xStart * scale, labelScore.yStart * scale, (labelScore.xEnd - labelScore.xStart) * scale, "center")
+	if gameOvered then
+		love.graphics.setColor(255, 255, 255)
+		love.graphics.printf("Game Over! Do your wanna start a new game? Click Enter to start a new game.", (field.xStart - 1) * scale, (field.yStart + 5) * scale, (field.x) * scale, "center")
+	end
 	-- love.graphics.rectangle("fill", player.x * scale, player.y * scale, (player.width) * scale, (player.height) * scale)
 end
